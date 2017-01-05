@@ -29,6 +29,8 @@ executable Mytransfer
                      , Mytransfer
                      , scotty
                      , wai-extra
+                     , text
+                     , http-types
   default-language:    Haskell2010
 
 test-suite Mytransfer-test

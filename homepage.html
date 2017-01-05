@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Piglet</title>
+        <title>Mytransfer</title>
         <style>
             body {
                 height: 100%;
@@ -15,10 +15,10 @@
     <body>
     Biep
     <br>
-    <form action="/piglet" method ="post">
-        <input type="text" name="email">Email&nbsp<br><br>
-        <input type="file" name="datafile">&nbspBazp<br><br>
-        <input type="submit" value="Baap">
+    <form action="/upload" enctype="multipart/form-data" method ="post">
+        <input type="text" name="email">&nbspEmail<br><br>
+        <input type="file" name="datafile">&nbspFile<br><br>
+        <input type="submit" value="Transfer!">
     </form>
     </body>
 </html>

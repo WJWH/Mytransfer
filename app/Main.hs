@@ -3,6 +3,8 @@ module Main where
 
 import Control.Monad
 import Control.Monad.IO.Class
+import qualified Data.Text as T
+import Network.HTTP.Types.Status
 import Network.Wai.Middleware.RequestLogger
 import Web.Scotty
 
@@ -15,7 +17,7 @@ main = do
         middleware logStdoutDev
         get "/" showLandingPage  
         get "/background" $ serveBackground getBackgroundPath
-        --post "/upload"
+        post "/upload" uploadFile
         --post "/download"
         
 showLandingPage :: ActionM () 
@@ -30,3 +32,11 @@ serveBackground getBackgroundPath = do
     file filepath --serve the background image
     
 -- /upload
+uploadFile :: ActionM ()
+uploadFile = do
+    mailadress <- param "email" :: ActionM T.Text
+    pars <- params
+    liftIO $ mapM_ print pars 
+    fs <- files
+    liftIO $ mapM_ print fs
+    status status204
