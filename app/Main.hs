@@ -1,6 +1,8 @@
 module Main where
 
-
+import Bib
 
 main :: IO ()
-main = print "Piglet!"
+main = do
+    print "Piglet!"
+    someFunc

@@ -15,8 +15,9 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Bib
+  exposed-modules:     ImageProvider
   build-depends:       base >= 4.7 && < 5
+                     , scotty
   default-language:    Haskell2010
 
 executable Mytransfer
