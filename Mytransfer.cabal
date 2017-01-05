@@ -18,6 +18,7 @@ library
   exposed-modules:     ImageProvider
   build-depends:       base >= 4.7 && < 5
                      , scotty
+                     , directory
   default-language:    Haskell2010
 
 executable Mytransfer
@@ -27,6 +28,7 @@ executable Mytransfer
   build-depends:       base
                      , Mytransfer
                      , scotty
+                     , wai-extra
   default-language:    Haskell2010
 
 test-suite Mytransfer-test
