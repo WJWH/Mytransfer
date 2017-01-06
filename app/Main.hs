@@ -29,8 +29,8 @@ showLandingPage :: ActionM ()
 showLandingPage = do
     setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
     file "homepage.html" --body of the response is a file (in this case the homepage)
-    
-showUploadFrame :: ActionM () 
+
+showUploadFrame :: ActionM ()
 showUploadFrame = do
     setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
     file "uploadframe.html" --body of the response is a file (in this case the homepage)
@@ -46,12 +46,21 @@ uploadFile :: ActionM ()
 uploadFile = do
     mailadress <- param "email" :: ActionM T.Text
     fs <- (map snd) <$> files --fst bit of the tuple is not needed
-    filenames <- liftIO $ mapM addFile fs
-    --send a mail with the filenames
-    mailResult <- liftIO $ sendUploadedFilesMessage filenames mailadress
-    case mailResult of
-        Left _ -> status status400 --sending the mail failed 
-        Right _ -> status status204 --sending the mail succeeded
+    case fs of
+        [] -> do
+            status status400
+            text "No files were submitted."
+        fs' -> do
+            filenames <- liftIO $ mapM addFile fs'
+            --send a mail with the filenames
+            mailResult <- liftIO $ sendUploadedFilesMessage filenames mailadress
+            case mailResult of
+                Left _ -> do
+                    status status400 --sending the mail failed
+                    text "Mailing the link(s) failed"
+                Right _ -> do
+                    status status200 --sending the mail succeeded
+                    text "You will receive a mail with links to download the files."
 
 -- /download
 downloadFile :: ActionM ()
