@@ -8,6 +8,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Network.HTTP.Types.Status
 import Network.Wai.Middleware.RequestLogger
+import Network.Wai.Parse
 import Web.Scotty
 
 import ImageProvider
@@ -18,7 +19,7 @@ main :: IO ()
 main = do
     getBackgroundPath <- startBackgroundProvider --returns a function that returns a image filepath
     scotty 80 $ do
-        middleware logStdoutDev
+        middleware logStdout
         get "/" showLandingPage
         get "/uploadframe" showUploadFrame
         get "/background" $ serveBackground getBackgroundPath
@@ -47,7 +48,7 @@ uploadFile = do
     mailadress <- param "email" :: ActionM T.Text
     fs <- (map snd) <$> files --fst bit of the tuple is not needed
     case fs of
-        [] -> do
+        [FileInfo "\"\"" _ _ ] -> do --if you select no files in the page, there will still be an empty file submitted
             status status400
             text "No files were submitted."
         fs' -> do

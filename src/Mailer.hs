@@ -8,7 +8,7 @@ import Mail.Hailgun
 
 import Secrets
 
-downloadLinkPrefix = "http://localhost:3000/download?fid="
+downloadLinkPrefix = "http://snokums.com/download?fid="
 
 myContext = HailgunContext  { hailgunDomain = "mg.snokums.com"
                             , hailgunApiKey = mailgunAPIkey --from Secrets.hs
