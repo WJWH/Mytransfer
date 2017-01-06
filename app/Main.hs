@@ -17,7 +17,7 @@ import Mailer
 main :: IO ()
 main = do
     getBackgroundPath <- startBackgroundProvider --returns a function that returns a image filepath
-    scotty 3000 $ do
+    scotty 80 $ do
         middleware logStdoutDev
         get "/" showLandingPage
         get "/uploadframe" showUploadFrame
