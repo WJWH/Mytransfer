@@ -20,6 +20,7 @@ main = do
     scotty 3000 $ do
         middleware logStdoutDev
         get "/" showLandingPage
+        get "/uploadframe" showUploadFrame
         get "/background" $ serveBackground getBackgroundPath
         post "/upload" uploadFile
         get "/download" downloadFile --should arguably be a POST, as it can't be cached
@@ -28,6 +29,11 @@ showLandingPage :: ActionM ()
 showLandingPage = do
     setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
     file "homepage.html" --body of the response is a file (in this case the homepage)
+    
+showUploadFrame :: ActionM () 
+showUploadFrame = do
+    setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
+    file "uploadframe.html" --body of the response is a file (in this case the homepage)
 
 serveBackground :: (IO FilePath) -> ActionM ()
 serveBackground getBackgroundPath = do
@@ -42,8 +48,10 @@ uploadFile = do
     fs <- (map snd) <$> files --fst bit of the tuple is not needed
     filenames <- liftIO $ mapM addFile fs
     --send a mail with the filenames
-    liftIO $ sendUploadedFilesMessage filenames mailadress
-    status status204
+    mailResult <- liftIO $ sendUploadedFilesMessage filenames mailadress
+    case mailResult of
+        Left _ -> status status400 --sending the mail failed 
+        Right _ -> status status204 --sending the mail succeeded
 
 -- /download
 downloadFile :: ActionM ()

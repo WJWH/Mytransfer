@@ -9,16 +9,16 @@
                 background-size: 100% 100%;
                 background-position: left top;
             }
+            iframe {
+                background-color: grey;
+                border: 0;
+                height: 200px;
+            }
         </style>
     </head>
     
     <body>
-    Biep
-    <br>
-    <form action="/upload" enctype="multipart/form-data" method ="post">
-        <input type="text" name="email">&nbspEmail<br><br>
-        <input type="file" name="datafile" multiple>&nbspFiles<br><br>
-        <input type="submit" value="Transfer!">
-    </form>
+        <iframe src="uploadframe">
+        </iframe>
     </body>
 </html>
