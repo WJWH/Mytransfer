@@ -40,6 +40,7 @@ serveBackground :: (IO FilePath) -> ActionM ()
 serveBackground getBackgroundPath = do
     filepath <- liftIO getBackgroundPath --see the ImageProvider module for how this works
     setHeader "Content-Type" "image/jpeg" -- all the images are JPEGs
+    setHeader "Cache-Control" "no-cache" --otherwise refreshing the page won't give you a new background 
     file filepath --serve the background image
 
 -- /upload
