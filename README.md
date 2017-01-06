@@ -11,5 +11,4 @@ What is the point of having nice images as backgrounds if you can't use them?
 * Log all the things
 Haskell logging is a bit all over the place, what with it being impure and all. 
 * Provide a lot of documentation and/or comments
-It would be nice if people looking to do specific can use this project sa a reference. Thus, it should be as 
-
+It would be nice if people looking to build their own websites in Haskell can use this project as a reference. Thus, it should well documented and with as little "magic" as possible.
