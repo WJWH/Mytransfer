@@ -8,7 +8,7 @@ import Mail.Hailgun
 
 import Secrets
 
-downloadLinkPrefix = "http://localhost:3000/download?="
+downloadLinkPrefix = "http://localhost:3000/download?fid="
 
 myContext = HailgunContext  { hailgunDomain = "mg.snokums.com"
                             , hailgunApiKey = mailgunAPIkey --from Secrets.hs
@@ -29,5 +29,5 @@ makeUploadContent :: [T.Text] -> MessageContent
 makeUploadContent fids = TextOnly . TE.encodeUtf8 $
     "Dear user,\n\n Your files have been uploaded succesfully. You can use the links below to download them again.\n\n" <>
     (T.intercalate "\n" $ map (downloadLinkPrefix <>) fids) <>
-    "\nBe aware that we will delete the file after it has been downloaded five times or after a week, whichever happens first.\n\nKind regards,\nWander from snokums.com"
+    "\n\nBe aware that we will delete the file after it has been downloaded five times or after a week, whichever happens first.\n\nKind regards,\nWander from snokums.com"
     
