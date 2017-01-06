@@ -12,6 +12,7 @@ import Web.Scotty
 
 import ImageProvider
 import StorageBackend
+import Mailer
 
 main :: IO ()
 main = do
@@ -41,6 +42,7 @@ uploadFile = do
     fs <- (map snd) <$> files --fst bit of the tuple is not needed
     filenames <- liftIO $ mapM addFile fs
     --send a mail with the filenames
+    liftIO $ sendUploadedFilesMessage filenames mailadress
     status status204
 
 -- /download
