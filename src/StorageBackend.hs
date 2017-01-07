@@ -13,6 +13,8 @@ import Database.SQLite.Simple
 import Network.Wai.Parse
 import System.Random
 
+import Types
+
 --there are four main functions:
 --  add a file
 --  retrieve a file
@@ -29,12 +31,6 @@ import System.Random
 --we don't keep files forever, they can be downloaded a maximum of <maxdownloads> times
 --currently a sqlite database is used for this, this can later be changed to an online database
 
-uploadedFileDirectory = "uploadedfiles/"
-maxdownloads = 5
-maxage =  (7 * 24 * 60 * 60) --one week
-dbpath = "filedb.sqlite"
-
-data RetrieveResult = ServerError | NotFound | Expired | TooManyDownloads | Found FilePath
 
 --writes an uploaded file to disk
 --adds a UUID to the filename to distinguish it from other files with the same name
@@ -74,4 +70,6 @@ retrieveFile fid = withConnection dbpath $ \conn -> do
                         else do --file has been uploaded too long ago
                             return Expired
                 else return TooManyDownloads -- downloaded too many times already
-        _ -> return ServerError --because id is the primary key in the table, so it must be unique
+        _ -> return ServerError 
+        --id is the primary key in the table, so it must be unique
+        --if there are multiple results when selecting on it there must be an error

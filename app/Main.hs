@@ -14,6 +14,7 @@ import Web.Scotty
 import ImageProvider
 import StorageBackend
 import Mailer
+import Types
 
 main :: IO ()
 main = do
