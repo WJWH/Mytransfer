@@ -1,0 +1,3 @@
+#!/bin/bash
+stack build
+gcloud compute copy-files .stack-work/install/x86_64-linux/lts-7.14/8.0.1/bin/Mytransfer firemind:~/Mytransfer
