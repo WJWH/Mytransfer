@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     ImageProvider, StorageBackend, Mailer, Secrets, Types
+  exposed-modules:     ImageProvider, StorageBackend, Mailer, Secrets, Types, Utilities
   build-depends:       base >= 4.7 && < 5
                      , scotty
                      , wai-extra

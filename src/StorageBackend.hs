@@ -2,6 +2,7 @@
 module StorageBackend where
 
 import Control.Applicative
+import Control.Exception
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as BL
 import Data.Monoid
@@ -11,6 +12,7 @@ import Data.Time
 import Data.UUID
 import Database.SQLite.Simple
 import Network.Wai.Parse
+import System.Directory
 import System.Random
 
 import Types
@@ -20,8 +22,9 @@ import Types
 --  retrieve a file
 --  check if a certain file exists
 --  delete a file (if it exists)
---Of these, only the first two are accessible by the user, deleting happens automatically though a 
---script after <maxdownloads> downloads or after <maxage> seconds have passed.
+--Of these, only the first two are accessible by the user, deleting happens automatically though a
+--the vacuum function in Utilities after <maxdownloads> downloads or after <maxage> seconds have
+--passed. Checking if a file exist is currently a part of retrieveFile as it's not used anywhere else.
 
 
 --this backend uses the local file system rather than an object storage service like S3
@@ -44,7 +47,7 @@ addFile (FileInfo fileName fileType fileContents) = do
     --register the file in the database, initially it obviously has zero downloads
     now <- getCurrentTime
     withConnection dbpath $ \conn -> do
-        execute conn "INSERT INTO Files (id, timesDownloaded, timeOfUpload) VALUES (?,?,?)" (uuidedFilename, 0 :: Int,now)
+        execute conn "INSERT INTO Files (id, timesDownloaded, timeOfUpload,deletedYet) VALUES (?,?,?,?)" (uuidedFilename, 0 :: Int,now,False)
     return uuidedFilename
 
 --this one does not do very much for the disk based version, in a version with an object storage
@@ -70,6 +73,19 @@ retrieveFile fid = withConnection dbpath $ \conn -> do
                         else do --file has been uploaded too long ago
                             return Expired
                 else return TooManyDownloads -- downloaded too many times already
-        _ -> return ServerError 
+        _ -> return ServerError
         --id is the primary key in the table, so it must be unique
         --if there are multiple results when selecting on it there must be an error
+
+--through a stroke of luck, the standard library function to delete files is called "removeFile", so we can
+--use "deleteFile" as our function name. This function tries to delete a file from the backing store and
+--returns a Bool indicating whether the operation was succesful or not.
+deleteFile :: T.Text -> IO Bool
+deleteFile fid = do
+    deleteResult <- try (removeFile (T.unpack $ uploadedFileDirectory <> fid)) :: IO (Either IOException ())
+    case deleteResult of
+        Left _ -> return False
+        Right () -> return True
+
+
+

@@ -15,9 +15,12 @@ import ImageProvider
 import StorageBackend
 import Mailer
 import Types
+import Utilities
 
 main :: IO ()
 main = do
+    assertStartupEnvironment --checks if all necessary directories and db's are present
+    startVacuumThread --starts the vacuumer that will clean up old files
     getBackgroundPath <- startBackgroundProvider --returns a function that returns a image filepath
     scotty 80 $ do
         middleware logStdout

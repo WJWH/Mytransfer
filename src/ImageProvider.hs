@@ -8,7 +8,7 @@ import Control.Concurrent
 import Control.Monad
 import System.Directory
 
-imageDirectory = "backgrounds/"
+import Types
 
 --interface to the main app. It is intended to be easily refactored for more arguments
 --when I want to select a background based on screen size or whatnot.
