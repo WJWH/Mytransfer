@@ -21,7 +21,7 @@ assertStartupEnvironment = do
     unless uploadDirExists (error "Could not find directory uploadedfiles, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
     backgroundsDirExists <- doesDirectoryExist imageDirectory
     unless backgroundsDirExists (error "Could not find directory backgrounds, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
-    print "Environment seems good, starting..."
+    print $ "Environment seems good, starting..." 
     return True
     
 --starts the vacuum thread

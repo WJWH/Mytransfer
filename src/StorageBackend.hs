@@ -1,9 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module StorageBackend where
 
-import Control.Applicative
 import Control.Exception
-import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as BL
 import Data.Monoid
 import qualified Data.Text as T
@@ -14,6 +12,7 @@ import Database.SQLite.Simple
 import Network.Wai.Parse
 import System.Directory
 import System.Random
+
 
 import Types
 
@@ -39,9 +38,9 @@ import Types
 --adds a UUID to the filename to distinguish it from other files with the same name
 --returns the actual filenames on disk so they can be mailed to the user
 addFile :: FileInfo BL.ByteString -> IO T.Text
-addFile (FileInfo fileName fileType fileContents) = do
+addFile (FileInfo fn _ fileContents) = do
     --add a UUID to the file so files with the same name don't get overwritten
-    uuidedFilename <- TE.decodeLatin1 . (\u ->"mytransfer-" <> u <> "-" <> fileName) . toASCIIBytes <$> randomIO
+    uuidedFilename <- TE.decodeLatin1 . (\u ->"mytransfer-" <> u <> "-" <> fn) . toASCIIBytes <$> randomIO
     --write the file
     BL.writeFile (T.unpack $ uploadedFileDirectory <> uuidedFilename) fileContents
     --register the file in the database, initially it obviously has zero downloads

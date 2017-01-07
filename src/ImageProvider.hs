@@ -1,9 +1,5 @@
 module ImageProvider where
 
---    ( getImage
---    ) where
-
-import Control.Applicative
 import Control.Concurrent
 import Control.Monad
 import System.Directory
@@ -16,7 +12,7 @@ import Types
 startBackgroundProvider :: IO (IO FilePath)
 startBackgroundProvider = do
     mv <- newEmptyMVar
-    forkIO $ backgroundProvider mv
+    void . forkIO $ backgroundProvider mv
     return (takeMVar mv)
 
 --Makes sure that the supplied MVar is "always" filled with a filename to a background image

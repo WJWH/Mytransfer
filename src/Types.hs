@@ -7,9 +7,20 @@ import Data.Time
 
 data RetrieveResult = ServerError | NotFound | Expired | TooManyDownloads | Found FilePath
 
-uploadedFileDirectory = "uploadedfiles/" :: T.Text
-maxdownloads = 5 :: Int
-maxage =  (7 * 24 * 60 * 60) :: NominalDiffTime --one week
-dbpath = "filedb.sqlite" :: FilePath
+uploadedFileDirectory :: T.Text
+uploadedFileDirectory = "uploadedfiles/"
+
+maxdownloads :: Int
+maxdownloads = 5
+
+maxage :: NominalDiffTime
+maxage =  (7 * 24 * 60 * 60) --one week
+
+dbpath :: FilePath
+dbpath = "filedb.sqlite"
+
+imageDirectory :: FilePath
 imageDirectory = "backgrounds/"
-vacuumInterval = 60 * 60 * 1000000 :: Int --one hour, in microseconds
+
+vacuumInterval :: Int
+vacuumInterval = 60 * 60 * 1000000 --one hour, in microseconds

@@ -8,8 +8,10 @@ import Mail.Hailgun
 
 import Secrets
 
+downloadLinkPrefix :: T.Text
 downloadLinkPrefix = "http://snokums.com/download?fid="
 
+myContext :: HailgunContext
 myContext = HailgunContext  { hailgunDomain = "mg.snokums.com"
                             , hailgunApiKey = mailgunAPIkey --from Secrets.hs
                             , hailgunProxy = Nothing }
