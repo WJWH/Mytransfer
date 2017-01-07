@@ -70,10 +70,19 @@ downloadFile = do
     fileID <- param "fid" :: ActionM T.Text
     mfp <- liftIO $ retrieveFile fileID
     case mfp of
-        Nothing -> do --either the file was downloaded too many times or it doesn't exist
+        NotFound -> do --either the file was downloaded too many times or it doesn't exist
             status status404
-            html "The file could not be found. Maybe it has expired or has been downloaded too many times already?"
-        Just fp -> do
+            html "The file you requested could not be found."
+        Expired -> do
+            status status404
+            html "The file you requested was uploaded more than a week ago and has been deleted."
+        TooManyDownloads -> do
+            status status404
+            html "The file you requested has been downloaded too many times already and has been deleted."
+        Found fp -> do
             setHeader "Content-Type" "application/octet-stream"
             setHeader "Content-Disposition" ("attachment; filename=" <> (TL.fromStrict fileID))
             file fp
+        ServerError -> do
+            status status500
+            html "Something went wrong while looking up the file you requested."
