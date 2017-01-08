@@ -12,13 +12,18 @@ type FID = T.Text
 
 data RetrieveResult = ServerError | NotFound | Expired | TooManyDownloads | Found FilePath
 
---name of the bucket i nGoogle CLoud Storage where all the user files are stored
+--name of the bucket in Google Cloud Storage where all the user files are stored
+--don't forget the / at the end!
 gcsBucketName :: T.Text
-gcsBucketName = ""
+gcsBucketName = "mytransfer-files/"
 
---uploaded files are kept here before they are deleted
+--uploaded files are kept here before they are uploaded, then they are deleted
 uploadedFileDirectory :: T.Text
 uploadedFileDirectory = "uploadedfiles/"
+
+--retrieved files are kept here while being served, then deleted
+downloadedFileDirectory :: T.Text
+downloadedFileDirectory = "downloadedfiles/"
 
 --after this many downloads, the vacuumer will delete the file from storage
 maxdownloads :: Int

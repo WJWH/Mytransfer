@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module StorageBackend where
 
+import Control.Concurrent
 import Control.Exception
 import qualified Data.ByteString.Lazy as BL
 import Data.Monoid
@@ -11,6 +12,8 @@ import Data.UUID
 import Database.SQLite.Simple
 import Network.Wai.Parse
 import System.Directory
+import System.Exit
+import System.Process
 import System.Random
 
 
@@ -41,13 +44,24 @@ addFile :: FileInfo BL.ByteString -> IO FID
 addFile (FileInfo fn _ fileContents) = do
     --add a UUID to the file so files with the same name don't get overwritten
     uuidedFilename <- TE.decodeLatin1 . (\u ->"mytransfer-" <> u <> "-" <> fn) . toASCIIBytes <$> randomIO
-    --write the file
+    --write the file to a temporary local location
     BL.writeFile (T.unpack $ uploadedFileDirectory <> uuidedFilename) fileContents
+    --use a background thread to upload the file to Google Cloud Storage and then delete it
+    forkIO $ uploadFile uuidedFilename
     --register the file in the database, initially it obviously has zero downloads
     now <- getCurrentTime
     withConnection dbpath $ \conn -> do
         execute conn "INSERT INTO Files (id, timesDownloaded, timeOfUpload,deletedYet) VALUES (?,?,?,?)" (uuidedFilename, 0 :: Int,now,False)
     return uuidedFilename
+
+--Background thread function to upload a file to GCS and then delete it from local storage
+--it forks out to the gsutil program to do the actual uploading
+uploadFile :: FID -> IO ()
+uploadFile fid = do
+    uploadResult <- system . T.unpack $ "gsutil cp " <> uploadedFileDirectory <> fid <> "gs://" <> gcsBucketName
+    case uploadResult of
+        ExitSuccess -> removeFile (T.unpack $ uploadedFileDirectory <> fid) --this means the file is safely uploaded so we can delete the local copy
+        _ -> return () -- uploading failed, leave the file in the local directory and we will retry later
 
 --this one does not do very much for the disk based version, in a version with an object storage
 --service this will become more involved.
@@ -65,6 +79,10 @@ retrieveFile fid = withConnection dbpath $ \conn -> do
             if numdownloads < maxdownloads
                 then if (now < (addUTCTime maxage timeOfUpload))
                         then do --file is not yet expired
+                            --retrieve the file from GCS, inline since it sadly makes no sense to do
+                            --this in a background thread
+                            system . T.unpack $ "gsutil cp gs://" <> gcsBucketName <> fid <> " " <> downloadedFileDirectory <> fid
+                            deleteDownloadedFileAfterFiveSeconds fid --see function for why this is safe
                             --update timesDownloaded in the db
                             execute conn "UPDATE Files SET timesDownloaded = timesDownloaded+1 WHERE id = ?" [fid]
                             --return the unpacked filepath
@@ -86,5 +104,13 @@ deleteFile fid = do
         Left _ -> return False
         Right () -> return True
 
-
-
+--this will delete the named file from the local filesystem after five seconds, so that it does not clog
+--up the local disk. We wait for five seconds so we can reasonably assume that the server has opened the 
+--file and is now serving it to the user (or even has finished already. The filesystem will unlink the
+--filename, but won't actually delete the contents (the inode) until all file descriptors to it have been
+--closed. Therefore, as soon as the server is done with it and closes the file descriptor, the inode will
+--be deleted.
+deleteDownloadedFileAfterFiveSeconds :: FID -> IO ()
+deleteDownloadedFileAfterFiveSeconds fid = do
+    threadDelay 5000000
+    removeFile . T.unpack $ downloadedFileDirectory <> fid

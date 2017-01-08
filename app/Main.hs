@@ -27,8 +27,8 @@ main = do
         get "/" showLandingPage
         get "/uploadframe" showUploadFrame
         get "/background" $ serveBackground getBackgroundPath
-        post "/upload" uploadFile
-        get "/download" downloadFile --should arguably be a POST, as it can't be cached
+        post "/upload" uploadFileHandler
+        get "/download" downloadFileHandler --should arguably be a POST, as it can't be cached
 
 showLandingPage :: ActionM ()
 showLandingPage = do
@@ -47,8 +47,8 @@ serveBackground getBackgroundPath = do
     file filepath --serve the background image
 
 -- /upload
-uploadFile :: ActionM ()
-uploadFile = do
+uploadFileHandler :: ActionM ()
+uploadFileHandler = do
     mailadress <- param "email" :: ActionM T.Text
     fs <- (map snd) <$> files --fst bit of the tuple is not needed
     case fs of
@@ -68,8 +68,8 @@ uploadFile = do
                     text "You will receive a mail with links to download the files."
 
 -- /download
-downloadFile :: ActionM ()
-downloadFile = do
+downloadFileHandler :: ActionM ()
+downloadFileHandler = do
     fileID <- param "fid" :: ActionM T.Text
     mfp <- liftIO $ retrieveFile fileID
     case mfp of
