@@ -1,5 +1,5 @@
 # Mytransfer
-A clone of wetransfer.com in Haskell, just to see how it works and if I can do it. (Check it out)[http://snokums.com].
+A clone of wetransfer.com in Haskell, just to see how it works and if I can do it. [Check it out](http://snokums.com).
 
 ## Project goals
 * Use a cloud service as a storage backend to handle file storage (S3, GCS, etc). Scaling is nice. Status: Done.
