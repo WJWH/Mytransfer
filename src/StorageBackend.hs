@@ -82,11 +82,11 @@ retrieveFile fid = withConnection dbpath $ \conn -> do
                             --retrieve the file from GCS, inline since it sadly makes no sense to do
                             --this in a background thread
                             system . T.unpack $ "gsutil cp gs://" <> gcsBucketName <> fid <> " " <> downloadedFileDirectory <> fid
-                            deleteDownloadedFileAfterFiveSeconds fid --see function for why this is safe
+                            --deleteDownloadedFileAfterFiveSeconds fid --see function for why this is safe
                             --update timesDownloaded in the db
                             execute conn "UPDATE Files SET timesDownloaded = timesDownloaded+1 WHERE id = ?" [fid]
                             --return the unpacked filepath
-                            return $ Found (T.unpack $ uploadedFileDirectory <> fid)
+                            return $ Found (T.unpack $ downloadedFileDirectory <> fid)
                         else do --file has been uploaded too long ago
                             return Expired
                 else return TooManyDownloads -- downloaded too many times already

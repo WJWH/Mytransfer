@@ -47,4 +47,5 @@ vacuum = withConnection dbpath $ \conn -> do
     forM_ fidsToDelete $ \(Only fid) -> do
         succeeded <- deleteFile fid
         when succeeded $ execute conn "UPDATE Files SET deletedYet = 1 WHERE id = ?" [fid]
+        print $ "Vacuumed file: " ++ (T.unpack fid) ++ ", succesfully removed: " ++ (show succeeded)
     
