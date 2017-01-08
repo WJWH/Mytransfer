@@ -19,6 +19,8 @@ assertStartupEnvironment = do
     unless dbExists (error "Could not find filedb.sqlite, it must be present in the same directory as the Mytransfer executable.")
     uploadDirExists <- doesDirectoryExist (T.unpack uploadedFileDirectory)
     unless uploadDirExists (error "Could not find directory uploadedfiles, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
+    downloadDirExists <- doesDirectoryExist (T.unpack downloadedFileDirectory)
+    unless downloadDirExists (error "Could not find directory downloadedfiles, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
     backgroundsDirExists <- doesDirectoryExist imageDirectory
     unless backgroundsDirExists (error "Could not find directory backgrounds, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
     print $ "Environment seems good, starting..." 
