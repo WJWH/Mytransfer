@@ -99,10 +99,10 @@ retrieveFile fid = withConnection dbpath $ \conn -> do
 --returns a Bool indicating whether the operation was succesful or not.
 deleteFile :: FID -> IO Bool
 deleteFile fid = do
-    deleteResult <- try (removeFile (T.unpack $ uploadedFileDirectory <> fid)) :: IO (Either IOException ())
+    deleteResult <- system . T.unpack $ "gsutil rm gs://" <> gcsBucketName <> fid
     case deleteResult of
-        Left _ -> return False
-        Right () -> return True
+        ExitSuccess -> return True
+        _ -> return False
 
 --this will delete the named file from the local filesystem after five seconds, so that it does not clog
 --up the local disk. We wait for five seconds so we can reasonably assume that the server has opened the 
