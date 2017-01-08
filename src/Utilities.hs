@@ -38,11 +38,11 @@ vacuumThread = forever $ do
 vacuum :: IO ()
 vacuum = withConnection dbpath $ \conn -> do
     now <- getCurrentTime
-    filesToDelete <- query conn
+    fidsToDelete <- query conn
         "SELECT id FROM Files WHERE timesDownloaded >= ? AND timeOfUpload < ? AND deletedYet = 0" 
         (maxdownloads, addUTCTime (negate maxage) now)
         :: IO [Only T.Text]
-    forM_ filesToDelete $ \(Only fid) -> do
+    forM_ fidsToDelete $ \(Only fid) -> do
         succeeded <- deleteFile fid
         when succeeded $ execute conn "UPDATE Files SET deletedYet = 1 WHERE id = ?" [fid]
     

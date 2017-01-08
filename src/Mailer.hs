@@ -7,6 +7,7 @@ import qualified Data.Text.Encoding as TE
 import Mail.Hailgun
 
 import Secrets
+import Types
 
 downloadLinkPrefix :: T.Text
 downloadLinkPrefix = "http://snokums.com/download?fid="
@@ -16,7 +17,7 @@ myContext = HailgunContext  { hailgunDomain = "mg.snokums.com"
                             , hailgunApiKey = mailgunAPIkey --from Secrets.hs
                             , hailgunProxy = Nothing }
                             
-sendUploadedFilesMessage :: [T.Text] -> T.Text -> IO (Either HailgunErrorResponse HailgunSendResponse)
+sendUploadedFilesMessage :: [FID] -> T.Text -> IO (Either HailgunErrorResponse HailgunSendResponse)
 sendUploadedFilesMessage fids email = case message of
     Left _ -> return (Left $ HailgunErrorResponse "Message could not be constructed, probably an invalid email adress was supplied.")
     Right m -> sendEmail myContext m

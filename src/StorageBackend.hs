@@ -37,7 +37,7 @@ import Types
 --writes an uploaded file to disk
 --adds a UUID to the filename to distinguish it from other files with the same name
 --returns the actual filenames on disk so they can be mailed to the user
-addFile :: FileInfo BL.ByteString -> IO T.Text
+addFile :: FileInfo BL.ByteString -> IO FID
 addFile (FileInfo fn _ fileContents) = do
     --add a UUID to the file so files with the same name don't get overwritten
     uuidedFilename <- TE.decodeLatin1 . (\u ->"mytransfer-" <> u <> "-" <> fn) . toASCIIBytes <$> randomIO
@@ -55,7 +55,7 @@ addFile (FileInfo fn _ fileContents) = do
 --if that is true, it unpacks the file ID and returns it so that it can be served to the user
 --bonus difficulty: what to do if this is the final time the file can be downloaded?
 --currently it leaves the file on the disk, an hourly cron job cleans up files
-retrieveFile :: T.Text -> IO RetrieveResult
+retrieveFile :: FID -> IO RetrieveResult
 retrieveFile fid = withConnection dbpath $ \conn -> do
     rs <- query conn "SELECT timesDownloaded, timeOfUpload FROM Files WHERE id = ?" [fid] :: IO [(Int,UTCTime)]
     now <- getCurrentTime
@@ -79,7 +79,7 @@ retrieveFile fid = withConnection dbpath $ \conn -> do
 --through a stroke of luck, the standard library function to delete files is called "removeFile", so we can
 --use "deleteFile" as our function name. This function tries to delete a file from the backing store and
 --returns a Bool indicating whether the operation was succesful or not.
-deleteFile :: T.Text -> IO Bool
+deleteFile :: FID -> IO Bool
 deleteFile fid = do
     deleteResult <- try (removeFile (T.unpack $ uploadedFileDirectory <> fid)) :: IO (Either IOException ())
     case deleteResult of
