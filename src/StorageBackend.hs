@@ -58,7 +58,7 @@ addFile (FileInfo fn _ fileContents) = do
 --it forks out to the gsutil program to do the actual uploading
 uploadFile :: FID -> IO ()
 uploadFile fid = do
-    uploadResult <- system . T.unpack $ "gsutil cp " <> uploadedFileDirectory <> fid <> "gs://" <> gcsBucketName
+    uploadResult <- system . T.unpack $ "gsutil cp " <> uploadedFileDirectory <> fid <> " gs://" <> gcsBucketName
     case uploadResult of
         ExitSuccess -> removeFile (T.unpack $ uploadedFileDirectory <> fid) --this means the file is safely uploaded so we can delete the local copy
         _ -> return () -- uploading failed, leave the file in the local directory and we will retry later
