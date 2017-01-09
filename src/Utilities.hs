@@ -32,8 +32,8 @@ startVacuumThread = void $ forkIO vacuumThread
 --it runs the vacuum function in a separate thread so that if it crashes it does not take this thread with it
 vacuumThread :: IO ()
 vacuumThread = forever $ do
-    threadDelay vacuumInterval
     forkIO vacuum
+    threadDelay vacuumInterval
 
 vacuum :: IO ()
 vacuum = withConnection dbpath $ \conn -> do
