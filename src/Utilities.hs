@@ -38,8 +38,9 @@ vacuumThread = forever $ do
 vacuum :: IO ()
 vacuum = withConnection dbpath $ \conn -> do
     now <- getCurrentTime
+    print $ "Started vacuumer at " ++ (show now) 
     fidsToDelete <- query conn
-        "SELECT id FROM Files WHERE timesDownloaded >= ? AND timeOfUpload < ? AND deletedYet = 0" 
+        "SELECT id FROM Files WHERE (timesDownloaded >= ? OR timeOfUpload < ?) AND deletedYet = 0" 
         (maxdownloads, addUTCTime (negate maxage) now)
         :: IO [Only FID] --select all the FIDs that should be deleted
     forM_ fidsToDelete $ \(Only fid) -> do
