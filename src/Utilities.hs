@@ -19,8 +19,6 @@ assertStartupEnvironment = do
     unless dbExists (error "Could not find filedb.sqlite, it must be present in the same directory as the Mytransfer executable.")
     uploadDirExists <- doesDirectoryExist (T.unpack uploadedFileDirectory)
     unless uploadDirExists (error "Could not find directory uploadedfiles, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
-    downloadDirExists <- doesDirectoryExist (T.unpack downloadedFileDirectory)
-    unless downloadDirExists (error "Could not find directory downloadedfiles, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
     backgroundsDirExists <- doesDirectoryExist imageDirectory
     unless backgroundsDirExists (error "Could not find directory backgrounds, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
     print $ "Environment seems good, starting..." 
@@ -43,9 +41,8 @@ vacuum = withConnection dbpath $ \conn -> do
     fidsToDelete <- query conn
         "SELECT id FROM Files WHERE timesDownloaded >= ? AND timeOfUpload < ? AND deletedYet = 0" 
         (maxdownloads, addUTCTime (negate maxage) now)
-        :: IO [Only T.Text]
+        :: IO [Only FID] --select all the FIDs that should be deleted
     forM_ fidsToDelete $ \(Only fid) -> do
         succeeded <- deleteFile fid
         when succeeded $ execute conn "UPDATE Files SET deletedYet = 1 WHERE id = ?" [fid]
         print $ "Vacuumed file: " ++ (T.unpack fid) ++ ", succesfully removed: " ++ (show succeeded)
-    

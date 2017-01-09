@@ -21,10 +21,6 @@ gcsBucketName = "mytransfer-files/"
 uploadedFileDirectory :: T.Text
 uploadedFileDirectory = "uploadedfiles/"
 
---retrieved files are kept here while being served, then deleted
-downloadedFileDirectory :: T.Text
-downloadedFileDirectory = "downloadedfiles/"
-
 --after this many downloads, the vacuumer will delete the file from storage
 maxdownloads :: Int
 maxdownloads = 5
