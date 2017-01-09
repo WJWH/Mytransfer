@@ -26,12 +26,12 @@ import Types
 --  delete a file (if it exists)
 --Of these, only the first two are accessible by the user, deleting happens automatically though a
 --the vacuum function in Utilities after <maxdownloads> downloads or after <maxage> seconds have
---passed. Checking if a file exist is currently a part of retrieveFile as it's not used anywhere else.
+--passed. Checking if a file exists is currently a part of retrieveFile as it's not used anywhere else.
 
-
---this backend uses the local file system rather than an object storage service like S3
---however, if needed it should be relatively straightforward to change this later due to the
---design of the module interface
+--this backend is based on gcsfuse, which is a way to mount a Google Cloud Storage (GCS) bucket
+--as a local file system. This makes it possible for all servers to access the same files. Since each
+--file/object in the bucket has a unique name (due to using UUIDs), there is no danger that servers will
+--accidentally overwrite each others files and they can all have the bucket mounted safely.
 
 --we don't keep files forever, they can be downloaded a maximum of <maxdownloads> times
 --currently a sqlite database is used for this, this can later be changed to an online database
