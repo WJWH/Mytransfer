@@ -1,10 +1,10 @@
 # Mytransfer
-A clone of wetransfer.com in Haskell, just to see how it works and if I can do it. [Check it out](http://snokums.com).
+A clone of wetransfer.com in Haskell, just to see how it works and if I can do it. 
 
 ## Project goals
-* Use a cloud service as a storage backend to handle file storage (S3, GCS, etc). Scaling is nice. Status: Done.
-* Develop a nice WAI middleware to handle graceful shutdowns for autoscaling. Status: in progress.
-* Make backgrounds scale to the device size of the user. What is the point of having nice images as backgrounds if the user can't see them well? Status: unstarted.
+* Use a cloud service as a storage backend to handle file storage (S3, GCS, etc). Scaling is nice.
+* Allow for "proper" autoscaling. Users should never notice a server being spun down, so it should at least have nice connection draining. The load balancers of AWS and GCE only allow connection draining for 3600 seconds though, which may not be enough for users downloading really large files on really slow connections, so it should be implemented on the servers itself. 
+* Make backgrounds scale to the device size of the user. What is the point of having nice images as backgrounds if the user can't see them well?
 * Log all the things. Haskell logging is a bit all over the place, what with it being impure and all. Status: unstarted, though it uses the standard WAI middleware for logging requests at least. 
 
 ## NOT project goals
@@ -13,6 +13,5 @@ A clone of wetransfer.com in Haskell, just to see how it works and if I can do i
 
 ## Personal goals
 * Write a medium complexity webapp using Scotty.
-* Improve my WAI middleware writing skills.
 * Figure out the Google Cloud Storage APIs.
 
