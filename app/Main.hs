@@ -1,13 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.IORef
 import Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Network.HTTP.Types.Status
+import Network
 import Network.Wai.Middleware.RequestLogger
+import Network.Wai.Handler.Warp (defaultSettings)
 import Network.Wai.Parse
 import Web.Scotty
 
@@ -17,18 +21,24 @@ import Mailer
 import Types
 import Utilities
 
+scottyopts = Options 0 defaultSettings
+
 main :: IO ()
 main = do
     void $ assertStartupEnvironment --checks if all necessary directories and db's are present
     startVacuumThread --starts the vacuumer that will clean up old files
     getBackgroundPath <- startBackgroundProvider --returns a function that returns a image filepath
-    scotty 80 $ do
+    shutdownIORef <- newIORef False
+    sock <- listenOn $ PortNumber 80
+    scottySocket scottyopts sock $ do
         middleware logStdout
         get "/" showLandingPage
         get "/uploadframe" showUploadFrame
         get "/background" $ serveBackground getBackgroundPath
         post "/upload" uploadFileHandler
         get "/download" downloadFileHandler --should arguably be a POST, as it can't be cached
+        post "/dogracefulshutdown" $ shutdownHandler shutdownIORef sock
+        get "/healthcheck" $ healthCheckHandler shutdownIORef
 
 showLandingPage :: ActionM ()
 showLandingPage = do
@@ -89,3 +99,36 @@ downloadFileHandler = do
         ServerError -> do
             status status500
             html "Something went wrong while looking up the file you requested."
+
+--initiate a graceful shutdown of the server
+shutdownHandler :: IORef Bool -> Socket -> ActionM ()
+shutdownHandler shutdownIORef socket = do
+    --here should be some sort of authentication, otherwise anyone can shut down the server 
+    --(not implemented yet however for this version)
+    liftIO $ print "Shutting down..."
+    --set the shutdownIORef to True. This tells the healthcheck function to start returning UNHEALTHY
+    --responses to the load balancer. After 2 UNHEALTHY responses (default on GCE, can be altered), 
+    --the load balancer will conclude that the server is sick and won't route any new responses to it.
+    --Existing conections are not terminated however.
+    liftIO $ writeIORef shutdownIORef True
+    --By default the health checks come every five seconds, so after a maximum of ten seconds there 
+    --should have been two failed health checks and this server will not get any new from the load
+    --balancer anymore. Closing down the accepting socket  causes the warp server to gracefully
+    --shut down after all outstanding requests have finished. We do this waiting and closing in a 
+    --separate thread, so that we can quickly respond to the request.
+    liftIO . forkIO $ (threadDelay (10 * 1000 * 1000) >> sClose socket) 
+    --return a response that you understood the request and everything went well
+    text "OK"
+
+--responds to health checks from the load balancer
+healthCheckHandler :: IORef Bool -> ActionM ()
+healthCheckHandler shutdownIORef = do
+    shouldShutdown <- liftIO $ readIORef shutdownIORef
+    if shouldShutdown
+        then do
+            status status404 --this is what actually matters, response body is just for clarity
+            text "UNHEALTHY"
+        else do
+            --no need to change status, it's 200 by default anyway
+            text "HEALTHY"
+            

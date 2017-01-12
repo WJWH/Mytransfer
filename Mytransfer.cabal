@@ -40,6 +40,8 @@ executable Mytransfer
                      , wai-extra
                      , text
                      , http-types
+                     , network
+                     , warp
   default-language:    Haskell2010
 
 test-suite Mytransfer-test
