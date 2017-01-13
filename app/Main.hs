@@ -11,6 +11,7 @@ import qualified Data.Text.Lazy as TL
 import Network.HTTP.Types.Status
 import Network
 import Network.Wai.Middleware.RequestLogger
+import Network.Wai.Middleware.Static
 import Network.Wai.Handler.Warp (defaultSettings)
 import Network.Wai.Parse
 import Web.Scotty
@@ -34,6 +35,7 @@ main = do
     sock <- listenOn $ PortNumber 80
     scottySocket scottyopts sock $ do
         middleware logStdout
+        middleware $ staticPolicy (noDots >-> addBase "static") 
         get "/" showLandingPage
         get "/uploadframe" showUploadFrame
         get "/background" $ serveBackground getBackgroundPath
