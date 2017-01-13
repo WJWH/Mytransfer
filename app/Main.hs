@@ -20,6 +20,7 @@ import StorageBackend
 import Mailer
 import Types
 import Utilities
+import Autoscaling
 
 scottyopts = Options 0 defaultSettings
 
@@ -28,6 +29,7 @@ main = do
     void $ assertStartupEnvironment --checks if all necessary directories and db's are present
     startVacuumThread --starts the vacuumer that will clean up old files
     getBackgroundPath <- startBackgroundProvider --returns a function that returns a image filepath
+    dls <- initDownloadTracker --create a DownloadStore and a periodic cleaning thread for it
     shutdownIORef <- newIORef False
     sock <- listenOn $ PortNumber 80
     scottySocket scottyopts sock $ do
@@ -36,20 +38,25 @@ main = do
         get "/uploadframe" showUploadFrame
         get "/background" $ serveBackground getBackgroundPath
         post "/upload" uploadFileHandler
-        get "/download" downloadFileHandler --should arguably be a POST, as it can't be cached
-        post "/dogracefulshutdown" $ shutdownHandler shutdownIORef sock
-        get "/healthcheck" $ healthCheckHandler shutdownIORef
+        get "/download" $ downloadFileHandler dls --should arguably be a POST, as it has side effects
+        post "/dogracefulshutdown" $ shutdownHandler shutdownIORef sock --shut down this server
+        get "/healthcheck" $ healthCheckHandler shutdownIORef --for the health check system of the load balancer
+        -- get "/load" -- returns the current load on the service
+        -- get "/timetodrain" -- returns the expected time for all current connections to finish
 
+--the homepage
 showLandingPage :: ActionM ()
 showLandingPage = do
     setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
     file "homepage.html" --body of the response is a file (in this case the homepage)
 
+--the iframe for the homepage
 showUploadFrame :: ActionM ()
 showUploadFrame = do
     setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
     file "uploadframe.html" --body of the response is a file (in this case the homepage)
 
+--serves a different background each time
 serveBackground :: (IO FilePath) -> ActionM ()
 serveBackground getBackgroundPath = do
     filepath <- liftIO getBackgroundPath --see the ImageProvider module for how this works
@@ -78,8 +85,8 @@ uploadFileHandler = do
                     text "You will receive a mail with links to download the files."
 
 -- /download
-downloadFileHandler :: ActionM ()
-downloadFileHandler = do
+downloadFileHandler :: DownloadStore -> ActionM ()
+downloadFileHandler dls = do
     fileID <- param "fid" :: ActionM T.Text
     mfp <- liftIO $ retrieveFile fileID
     case mfp of
@@ -95,7 +102,8 @@ downloadFileHandler = do
         Found fp -> do
             setHeader "Content-Type" "application/octet-stream"
             setHeader "Content-Disposition" ("attachment; filename=" <> (TL.fromStrict fileID))
-            file fp
+            ior <- liftIO $ addDownload fp dls
+            stream $ streamFromFile fp ior
         ServerError -> do
             status status500
             html "Something went wrong while looking up the file you requested."
@@ -103,20 +111,20 @@ downloadFileHandler = do
 --initiate a graceful shutdown of the server
 shutdownHandler :: IORef Bool -> Socket -> ActionM ()
 shutdownHandler shutdownIORef socket = do
-    --here should be some sort of authentication, otherwise anyone can shut down the server 
+    --here should be some sort of authentication, otherwise anyone can shut down the server
     --(not implemented yet however for this version)
     liftIO $ print "Shutting down..."
     --set the shutdownIORef to True. This tells the healthcheck function to start returning UNHEALTHY
-    --responses to the load balancer. After 2 UNHEALTHY responses (default on GCE, can be altered), 
+    --responses to the load balancer. After 2 UNHEALTHY responses (default on GCE, can be altered),
     --the load balancer will conclude that the server is sick and won't route any new responses to it.
     --Existing conections are not terminated however.
     liftIO $ writeIORef shutdownIORef True
-    --By default the health checks come every five seconds, so after a maximum of ten seconds there 
+    --By default the health checks come every five seconds, so after a maximum of ten seconds there
     --should have been two failed health checks and this server will not get any new from the load
     --balancer anymore. Closing down the accepting socket  causes the warp server to gracefully
-    --shut down after all outstanding requests have finished. We do this waiting and closing in a 
+    --shut down after all outstanding requests have finished. We do this waiting and closing in a
     --separate thread, so that we can quickly respond to the request.
-    liftIO . forkIO $ (threadDelay (10 * 1000 * 1000) >> sClose socket) 
+    liftIO . forkIO $ (threadDelay (10 * 1000 * 1000) >> sClose socket)
     --return a response that you understood the request and everything went well
     text "OK"
 
@@ -131,4 +139,4 @@ healthCheckHandler shutdownIORef = do
         else do
             --no need to change status, it's 200 by default anyway
             text "HEALTHY"
-            
+

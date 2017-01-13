@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Types where 
+module Types where
 --module for types and constants
 
+import Control.Concurrent
+import Data.IORef
 import qualified Data.Text as T
 import Data.Time
 
@@ -40,3 +42,12 @@ imageDirectory = "backgrounds/"
 --the interval at which the vacuum function is called
 vacuumInterval :: Int
 vacuumInterval = 60 * 60 * 1000000 --one hour, in microseconds
+
+
+data Download = DL  { filesize :: Int --maxBound :: Int shows it's enough up to about 9 Exabytes
+                    , progressIORef :: IORef Int
+                    , timeStarted :: UTCTime
+                    } deriving (Eq)
+
+--For now a list will do fine. Using a MVar to prevent race conditions in adding and deleting entries
+type DownloadStore = MVar [Download]
