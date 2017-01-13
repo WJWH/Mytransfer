@@ -42,7 +42,7 @@ main = do
         post "/dogracefulshutdown" $ shutdownHandler shutdownIORef sock --shut down this server
         get "/healthcheck" $ healthCheckHandler shutdownIORef --for the health check system of the load balancer
         -- get "/load" -- returns the current load on the service
-        -- get "/timetodrain" -- returns the expected time for all current connections to finish
+        get "/timetodrain" $ drainTimeHandler dls --returns expected time for all current connections to finish
 
 --the homepage
 showLandingPage :: ActionM ()
@@ -140,3 +140,9 @@ healthCheckHandler shutdownIORef = do
             --no need to change status, it's 200 by default anyway
             text "HEALTHY"
 
+--returns the expected time to drain in seconds in the body of the response
+--see the autoscaling module
+drainTimeHandler :: DownloadStore -> ActionM()
+drainTimeHandler dls = do
+    edt <- liftIO $ getExpectedDrainTime dls
+    text . TL.pack . show $ edt --size of edt is so low this will be fast even though it;s inefficient
