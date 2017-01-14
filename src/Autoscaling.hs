@@ -33,11 +33,14 @@ import Types
 
 
 --creates a DownloadStore, starts a vacuuming thread
-initDownloadTracker :: IO DownloadStore
+initDownloadTracker :: IO (DownloadStore, LoadState)
 initDownloadTracker = do
     dls <- newMVar []
-    forkIO $ vacuumer dls
-    return dls
+    now <- getCurrentTime
+    ls <- newIORef (now,0,0)
+    forkIO $ vacuumer dls ls
+    forkIO $ loadCalculator ls dls 
+    return (dls,ls)
 
 --given a filepath and a DownloadStore, starts tracking it. returns a IORef to be used in the counting conduit
 addDownload :: FilePath -> DownloadStore -> IO (IORef Int)
@@ -71,17 +74,24 @@ getExpectedDrainTime dls = do
 safeMaximum = foldl' (+) 0
 
 --rums every hour to clean up the list of downloads, since you don't have to track downloads that have completed
-vacuumer :: DownloadStore->  IO ()
-vacuumer dls = forever $ do
+vacuumer :: DownloadStore -> LoadState -> IO ()
+vacuumer dls ls = forever $ do
     threadDelay $ 60 * 60 * 1000000 --wait one hour
-    forkIO $ cleanDownloads dls --run in an separate thread so
+    forkIO $ cleanDownloads dls ls --run in an separate thread so
 
---delete all the fininshed downloads
-cleanDownloads :: DownloadStore -> IO ()
-cleanDownloads dls = do
+--delete all the fininshed downloads from the DownloadStore, then upload the LoadState
+cleanDownloads :: DownloadStore -> LoadState -> IO ()
+cleanDownloads dls loadRef = do
     downloads <- takeMVar dls --this will block every thread trying to use the MVar, unavoidable
     activeDownloads <- filterM isNotYetCompleted downloads --filter out completed downloads
     putMVar dls activeDownloads --the downloads that have not completed yet are put back in the DownloadStore
+    --the MVar is now unblocked and can be used again
+    --now we update the load state so it won't give negative load due to all the completed files
+    --disappearing from the progress calculation. We keep the average load from last time.
+    (prevRunTime, prevTotalBytes, lastRate) <- readIORef loadRef
+    totalBytesNow <- sum <$> mapM (\d -> readIORef $ progressIORef d) activeDownloads
+    now <- getCurrentTime
+    writeIORef loadRef (now,totalBytesNow,lastRate)
 
 isNotYetCompleted :: Download -> IO Bool
 isNotYetCompleted dl = do
@@ -115,3 +125,23 @@ streamingConduit write flush = do
             liftIO $ flush
             streamingConduit write flush
         Nothing -> return ()
+
+--runs calculateLoad every <loadCalculationRate> seconds
+loadCalculator :: LoadState -> DownloadStore -> IO ()
+loadCalculator loadRef dls = forever $ do
+    threadDelay loadCalculationRate
+    forkIO $ calculateLoad loadRef dls
+
+--calculates the load over the last few seconds and puts the result in the IOVar
+--might be slightly off the "real" value due to race conditions but that should average out
+calculateLoad loadRef dls = do
+    (prevRunTime, prevTotalBytes, _) <- readIORef loadRef
+    downloads <- readMVar dls
+    totalBytes <- sum <$> mapM (\d -> readIORef $ progressIORef d) downloads
+    now <- getCurrentTime
+    --written out for clarity
+    let bytesSinceLastRun = totalBytes - prevTotalBytes
+    let timePassedSinceLastRun = ceiling (diffUTCTime now (prevRunTime))
+    let averageLoad = bytesSinceLastRun `div` timePassedSinceLastRun
+    writeIORef loadRef (now,totalBytes,averageLoad) --write the IORef with the updated values
+

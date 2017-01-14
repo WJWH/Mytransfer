@@ -31,7 +31,7 @@ main = do
     void $ assertStartupEnvironment --checks if all necessary directories and db's are present
     startVacuumThread --starts the vacuumer that will clean up old files
     getBackgroundPath <- startBackgroundProvider --returns a function that returns a image filepath
-    dls <- initDownloadTracker --create a DownloadStore and a periodic cleaning thread for it
+    (dls,loadRef) <- initDownloadTracker --create a DownloadStore and a periodic cleaning thread for it
     shutdownIORef <- newIORef False
     sock <- listenOn $ PortNumber 80
     scottySocket scottyopts sock $ do
@@ -43,7 +43,7 @@ main = do
         get "/download" $ downloadFileHandler dls --should arguably be a POST, as it has side effects
         post "/dogracefulshutdown" $ shutdownHandler shutdownIORef sock --shut down this server
         get "/healthcheck" $ healthCheckHandler shutdownIORef --for the health check system of the load balancer
-        -- get "/load" -- returns the current load on the service
+        get "/load" $ loadHandler loadRef -- returns the current load on the server in Bytes/sec
         get "/timetodrain" $ drainTimeHandler dls --returns expected time for all current connections to finish
 
 --the homepage
@@ -60,7 +60,7 @@ serveBackground getBackgroundPath = do
     setHeader "Content-Type" "image/jpeg" -- all the images are JPEGs
     --serve the background image. uses BL.readFile and raw instead of the file response function in order
     --to prevent the server from prematurely returning 304 Not Modified responses
-    (liftIO $ BL.readFile filepath) >>= raw 
+    (liftIO $ BL.readFile filepath) >>= raw
 
 -- /upload
 uploadFileHandler :: ActionM ()
@@ -144,4 +144,10 @@ healthCheckHandler shutdownIORef = do
 drainTimeHandler :: DownloadStore -> ActionM()
 drainTimeHandler dls = do
     edt <- liftIO $ getExpectedDrainTime dls
-    text . TL.pack . show $ edt --size of edt is so low this will be fast even though it;s inefficient
+    text . TL.pack . show $ edt --size of edt is so low this will be fast even though it's inefficient
+
+--returns the average load in the last few seconds 
+loadHandler :: LoadState -> ActionM ()
+loadHandler loadRef = do
+    (_,_,rate) <- liftIO $ readIORef loadRef
+    text . TL.pack . show $ rate

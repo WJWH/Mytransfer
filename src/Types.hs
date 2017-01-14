@@ -51,3 +51,9 @@ data Download = DL  { filesize :: Int --maxBound :: Int shows it's enough up to 
 
 --For now a list will do fine. Using a MVar to prevent race conditions in adding and deleting entries
 type DownloadStore = MVar [Download]
+
+type LoadState = IORef (UTCTime,Int,Int) --lastMeasurement, totalBytes toen en avg bytes/sec toen berekend
+
+--the average load in bytes/sec is calculated every <loadCalculationRate> microseconds
+loadCalculationRate :: Int
+loadCalculationRate = 30*1000*1000 --30 seconds in microseconds
