@@ -119,7 +119,7 @@ shutdownHandler shutdownIORef socket = do
     --balancer anymore. Closing down the accepting socket  causes the warp server to gracefully
     --shut down after all outstanding requests have finished. We do this waiting and closing in a
     --separate thread, so that we can quickly respond to the request.
-    liftIO . forkIO $ (threadDelay (10 * 1000 * 1000) >> sClose socket)
+    liftIO . forkIO $ (threadDelay (10 * 1000 * 1000) >> sClose socket >> print "Closed appecting socket.")
     --return a response that you understood the request and everything went well
     text "OK"
 
