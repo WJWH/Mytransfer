@@ -52,6 +52,7 @@ executable Mytransfer
                      , network
                      , warp
                      , wai-middleware-static
+                     , bytestring
   default-language:    Haskell2010
 
 test-suite Mytransfer-test

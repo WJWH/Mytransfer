@@ -4,6 +4,7 @@ module Main where
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
+import qualified Data.ByteString.Lazy as BL
 import Data.IORef
 import Data.Monoid
 import qualified Data.Text as T
@@ -56,7 +57,9 @@ serveBackground :: (IO FilePath) -> ActionM ()
 serveBackground getBackgroundPath = do
     filepath <- liftIO getBackgroundPath --see the ImageProvider module for how this works
     setHeader "Content-Type" "image/jpeg" -- all the images are JPEGs
-    file filepath --serve the background image
+    --serve the background image. uses BL.readFile and raw instead of the file response function in order
+    --to prevent the server from prematurely returning 304 Not Modified responses
+    (liftIO $ BL.readFile filepath) >>= raw 
 
 -- /upload
 uploadFileHandler :: ActionM ()
