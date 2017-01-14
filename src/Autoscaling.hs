@@ -10,6 +10,7 @@ import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Builder.Extra as BBE
 import qualified Data.Conduit.Combinators as C
 import Data.IORef
+import Data.List
 import Data.Time
 import Network.Wai
 import System.IO
@@ -63,7 +64,11 @@ getExpectedDrainTime :: DownloadStore -> IO Int
 getExpectedDrainTime dls = do
     downloads <- readMVar dls
     completionTimes <- mapM computeExpectedCompletionTime downloads
-    return $ maximum completionTimes
+    return $ safeMaximum completionTimes
+
+--the normal maximum function returns an error on an empty list, this one returns zero which is a much
+--saner default in this case
+safeMaximum = foldl' (+) 0
 
 --rums every hour to clean up the list of downloads, since you don't have to track downloads that have completed
 vacuumer :: DownloadStore->  IO ()
