@@ -4,10 +4,11 @@ module Autoscaling where
 import Control.Concurrent hiding (yield)
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Conduit
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Builder.Extra as BBE
+import Data.Conduit
 import qualified Data.Conduit.Combinators as C
 import Data.IORef
 import Data.List
@@ -101,6 +102,10 @@ isNotYetCompleted dl = do
 --streams a file through the Scotty "stream" function
 streamFromFile :: FilePath -> IORef Int -> StreamingBody
 streamFromFile fp ior w f = runConduitRes $ C.sourceFileBS fp =$= countingConduit ior =$= (streamingConduit w f)
+
+--streams an uploaded string of bytes into a file on a local filesystem
+streamToFile :: FilePath -> BL.ByteString -> IORef Int -> IO ()
+streamToFile fp bs ior = runConduitRes $ C.sourceLazy bs =$= countingConduit ior =$= C.sinkFile fp
 
 --counts the number of bytes flowing through it and stores this in the IORef provided as an argument
 countingConduit :: MonadIO m => IORef Int -> ConduitM B.ByteString B.ByteString m ()
