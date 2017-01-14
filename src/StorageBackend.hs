@@ -16,7 +16,7 @@ import System.Exit
 import System.Process
 import System.Random
 
-
+import DatabaseCalls
 import Types
 
 --there are four main functions:
@@ -43,16 +43,12 @@ import Types
 addFile :: FileInfo BL.ByteString -> IO FID
 addFile (FileInfo fn _ fileContents) = do
     --add a UUID to the file so files with the same name don't get overwritten
-    uuidedFilename <- TE.decodeLatin1 . (\u ->"mytransfer-" <> u <> "-" <> fn) . toASCIIBytes <$> randomIO
+    fid <- TE.decodeLatin1 . (\u ->"mytransfer-" <> u <> "-" <> fn) . toASCIIBytes <$> randomIO
     --write the file to the bucket
-    BL.writeFile (T.unpack $ uploadedFileDirectory <> uuidedFilename) fileContents
+    BL.writeFile (T.unpack $ uploadedFileDirectory <> fid) fileContents
     --register the file in the database, initially it obviously has zero downloads
-    now <- getCurrentTime
-    withConnection dbpath $ \conn -> do
-        execute conn 
-            "INSERT INTO Files (id, timesDownloaded, timeOfUpload,deletedYet) VALUES (?,?,?,?)"
-            (uuidedFilename, 0 :: Int,now,False)
-    return uuidedFilename
+    withConnection dbpath $ \conn -> addUploadedFile conn fid
+    return fid
 
 --this one does not do very much for the disk based version, in a version with an object storage
 --service this will become more involved.
@@ -61,8 +57,8 @@ addFile (FileInfo fn _ fileContents) = do
 --bonus difficulty: what to do if this is the final time the file can be downloaded?
 --currently it leaves the file on the disk, an hourly cron job cleans up files
 retrieveFile :: FID -> IO RetrieveResult
-retrieveFile fid = withConnection dbpath $ \conn -> do
-    rs <- query conn "SELECT timesDownloaded, timeOfUpload FROM Files WHERE id = ?" [fid] :: IO [(Int,UTCTime)]
+retrieveFile fid = do
+    rs <- withConnection dbpath $ \conn -> getFIDMetaData conn fid
     now <- getCurrentTime
     case rs of
         [] -> return NotFound --file is not known to the database
@@ -71,7 +67,7 @@ retrieveFile fid = withConnection dbpath $ \conn -> do
                 then if (now < (addUTCTime maxage timeOfUpload))
                     then do --file is not yet expired
                         --update timesDownloaded in the db
-                        execute conn "UPDATE Files SET timesDownloaded = timesDownloaded+1 WHERE id = ?" [fid]
+                        withConnection dbpath $ \conn -> increaseFileDownloads conn fid
                         --return the unpacked filepath
                         return $ Found (T.unpack $ uploadedFileDirectory <> fid)
                     else do --file has been uploaded too long ago

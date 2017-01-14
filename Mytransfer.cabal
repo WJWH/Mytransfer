@@ -22,6 +22,7 @@ library
                      , Types
                      , Utilities
                      , Autoscaling
+                     , DatabaseCalls
   build-depends:       base >= 4.7 && < 5
                      , scotty
                      , wai-extra

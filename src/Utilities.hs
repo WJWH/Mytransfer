@@ -8,6 +8,7 @@ import Data.Time
 import Database.SQLite.Simple
 import System.Directory
 
+import DatabaseCalls
 import StorageBackend
 import Types
 
@@ -37,11 +38,7 @@ vacuumThread = forever $ do
 
 vacuum :: IO ()
 vacuum = withConnection dbpath $ \conn -> do
-    now <- getCurrentTime
-    fidsToDelete <- query conn
-        "SELECT id FROM Files WHERE (timesDownloaded >= ? OR timeOfUpload < ?) AND deletedYet = 0" 
-        (maxdownloads, addUTCTime (negate maxage) now)
-        :: IO [Only FID] --select all the FIDs that should be deleted
+    fidsToDelete <- getFidsToDelete conn --select all the FIDs that should be deleted
     forM_ fidsToDelete $ \(Only fid) -> do
         succeeded <- deleteFile fid
         when succeeded $ execute conn "UPDATE Files SET deletedYet = 1 WHERE id = ?" [fid]
