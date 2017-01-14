@@ -9,7 +9,7 @@ A clone of wetransfer.com in Haskell, just to see how it works and if I can do i
 
 ## NOT project goals
 * Actually run a cloud storage service. It sounds like a lot of hassle. Don't rely on the website actually being up.
-* Make everything "NSA-proof". It's a file transfer service, encryption would add a ton of unnecessary complexity.
+* Make a super nice frontend using all the hippest technologies. In this project I will be focusing on the backend and only adding as much frontend as is required to make the application work.
 
 ## Personal goals
 * Write a medium complexity webapp using Scotty.
