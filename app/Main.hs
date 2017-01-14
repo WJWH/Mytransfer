@@ -37,7 +37,6 @@ main = do
         middleware logStdout
         middleware $ staticPolicy (noDots >-> addBase "static") 
         get "/" showLandingPage
-        get "/uploadframe" showUploadFrame
         get "/background" $ serveBackground getBackgroundPath
         post "/upload" uploadFileHandler
         get "/download" $ downloadFileHandler dls --should arguably be a POST, as it has side effects
@@ -51,12 +50,6 @@ showLandingPage :: ActionM ()
 showLandingPage = do
     setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
     file "homepage.html" --body of the response is a file (in this case the homepage)
-
---the iframe for the homepage
-showUploadFrame :: ActionM ()
-showUploadFrame = do
-    setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
-    file "uploadframe.html" --body of the response is a file (in this case the homepage)
 
 --serves a different background each time
 serveBackground :: (IO FilePath) -> ActionM ()
