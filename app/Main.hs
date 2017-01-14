@@ -49,7 +49,7 @@ main = do
 showLandingPage :: ActionM ()
 showLandingPage = do
     setHeader "Content-Type" "text/html" --file doesn't set the content type by itself
-    file "homepage.html" --body of the response is a file (in this case the homepage)
+    file "static/homepage.html" --body of the response is a file (in this case the homepage)
 
 --serves a different background each time
 serveBackground :: (IO FilePath) -> ActionM ()
