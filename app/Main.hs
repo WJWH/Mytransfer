@@ -56,6 +56,7 @@ showLandingPage = do
 serveBackground :: (IO FilePath) -> ActionM ()
 serveBackground getBackgroundPath = do
     filepath <- liftIO getBackgroundPath --see the ImageProvider module for how this works
+    setHeader "Cache-control" "no-cache" --prevent caching the background as that doesn't really make sense in this case anyway
     setHeader "Content-Type" "image/jpeg" -- all the images are JPEGs
     --serve the background image. uses BL.readFile and raw instead of the file response function in order
     --to prevent the server from prematurely returning 304 Not Modified responses
