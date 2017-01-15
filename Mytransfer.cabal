@@ -39,6 +39,7 @@ library
                      , conduit
                      , conduit-combinators
                      , resource-pool
+                     , postgresql-simple
   default-language:    Haskell2010
 
 executable Mytransfer

@@ -5,16 +5,17 @@ module DatabaseCalls where
 --This is useful because the early versions used SQLite while I eventually want to change to Postgres
 --to make autoscaling possible.
 
+import Control.Monad
 import Data.Pool
 import Data.Time
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
 
 import Types
 
 --Makes a connection pool to the database with one subpool, closing unused connections after 10 seconds and
 --keeping open a maximum of 10 connections per subpool. These defaults should be fine.
 makeDBConnectionPool :: IO (Pool Connection)
-makeDBConnectionPool = createPool (open dbpath) (close) 1 10 10
+makeDBConnectionPool = createPool (connect postgresConnectionParameters) (close) 1 10 10
 
 
 --used by the vacuum function in the Utilities module, will select all FIDs in the Files table that
@@ -31,7 +32,7 @@ getFidsToDelete pool = withResource pool $ \conn -> do
 addUploadedFile :: Pool Connection -> FID -> IO ()
 addUploadedFile pool fid = withResource pool $ \conn -> do
     now <- getCurrentTime
-    execute conn 
+    void $ execute conn 
         "INSERT INTO Files (id, timesDownloaded, timeOfUpload,deletedYet) VALUES (?,?,?,?)"
         (fid, 0 :: Int,now,False)
 
@@ -41,11 +42,11 @@ getFIDMetaData pool fid = withResource pool $ \conn -> query conn "SELECT timesD
 
 --Increase the number of times that a file has been downloaded
 increaseFileDownloads :: Pool Connection -> FID -> IO ()
-increaseFileDownloads pool fid = withResource pool $ \conn -> execute conn "UPDATE Files SET timesDownloaded = timesDownloaded+1 WHERE id = ?" [fid]
+increaseFileDownloads pool fid = withResource pool $ \conn -> void $ execute conn "UPDATE Files SET timesDownloaded = timesDownloaded+1 WHERE id = ?" [fid]
 
 --Marks the file as deleted in the database
 markFileAsDeleted :: DBConnectionPool -> FID -> IO ()
-markFileAsDeleted pool fid = withResource pool $ \conn -> execute conn "UPDATE Files SET deletedYet = 1 WHERE id = ?" [fid]
+markFileAsDeleted pool fid = withResource pool $ \conn -> void $ execute conn "UPDATE Files SET deletedYet = 1 WHERE id = ?" [fid]
 
 --create table statement to create the Files table in sqlite:
 --CREATE TABLE "Files" ("id" TEXT PRIMARY KEY  NOT NULL ,"timesDownloaded" INTEGER NOT NULL ,"timeOfUpload" DATETIME NOT NULL  DEFAULT (null) , "deletedYet" BOOL NOT NULL)

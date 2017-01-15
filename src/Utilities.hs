@@ -5,7 +5,7 @@ import Control.Concurrent
 import Control.Monad
 import qualified Data.Text as T
 import Data.Time
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
 import System.Directory
 
 import DatabaseCalls
