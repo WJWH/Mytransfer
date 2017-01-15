@@ -4,8 +4,10 @@ module Types where
 
 import Control.Concurrent
 import Data.IORef
+import Data.Pool
 import qualified Data.Text as T
 import Data.Time
+import Database.SQLite.Simple
 
 -- A FID is the T.Text version of a filename or an object name. It consists of the
 --word "mytransfer-", then a random UUID , another "-" and then the original filename
@@ -57,3 +59,5 @@ type LoadState = IORef (UTCTime,Int,Int) --lastMeasurement, totalBytes toen en a
 --the average load in bytes/sec is calculated every <loadCalculationRate> microseconds
 loadCalculationRate :: Int
 loadCalculationRate = 30*1000*1000 --30 seconds in microseconds
+
+type DBConnectionPool = Pool Connection

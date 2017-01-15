@@ -23,13 +23,15 @@ import Mailer
 import Types
 import Utilities
 import Autoscaling
+import DatabaseCalls
 
 scottyopts = Options 0 defaultSettings
 
 main :: IO ()
 main = do
     void $ assertStartupEnvironment --checks if all necessary directories and db's are present
-    startVacuumThread --starts the vacuumer that will clean up old files
+    pool <- makeDBConnectionPool --start a pool of database connections
+    startVacuumThread pool --starts the vacuumer that will clean up old files
     getBackgroundPath <- startBackgroundProvider --returns a function that returns a image filepath
     (dls,loadRef) <- initDownloadTracker --create a DownloadStore and a periodic cleaning thread for it
     shutdownIORef <- newIORef False
@@ -39,8 +41,8 @@ main = do
         middleware $ staticPolicy (noDots >-> addBase "static") 
         get "/" showLandingPage
         get "/background" $ serveBackground getBackgroundPath
-        post "/upload" uploadFileHandler
-        get "/download" $ downloadFileHandler dls --should arguably be a POST, as it has side effects
+        post "/upload" $ uploadFileHandler pool
+        get "/download" $ downloadFileHandler pool dls --should arguably be a POST, as it has side effects
         post "/dogracefulshutdown" $ shutdownHandler shutdownIORef sock --shut down this server
         get "/healthcheck" $ healthCheckHandler shutdownIORef --for the health check system of the load balancer
         get "/load" $ loadHandler loadRef -- returns the current load on the server in Bytes/sec
@@ -63,8 +65,8 @@ serveBackground getBackgroundPath = do
     (liftIO $ BL.readFile filepath) >>= raw
 
 -- /upload
-uploadFileHandler :: ActionM ()
-uploadFileHandler = do
+uploadFileHandler :: DBConnectionPool -> ActionM ()
+uploadFileHandler pool = do
     mailadress <- param "email" :: ActionM T.Text
     fs <- (map snd) <$> files --fst bit of the tuple is not needed
     case fs of
@@ -72,7 +74,7 @@ uploadFileHandler = do
             status status400
             text "No files were submitted."
         fs' -> do
-            filenames <- liftIO $ mapM addFile fs'
+            filenames <- liftIO $ mapM (addFile pool) fs'
             --send a mail with the filenames
             mailResult <- liftIO $ sendUploadedFilesMessage filenames mailadress
             case mailResult of
@@ -84,10 +86,10 @@ uploadFileHandler = do
                     text "You will receive a mail with links to download the files."
 
 -- /download
-downloadFileHandler :: DownloadStore -> ActionM ()
-downloadFileHandler dls = do
+downloadFileHandler :: DBConnectionPool -> DownloadStore -> ActionM ()
+downloadFileHandler pool dls = do
     fileID <- param "fid" :: ActionM T.Text
-    mfp <- liftIO $ retrieveFile fileID
+    mfp <- liftIO $ retrieveFile pool fileID
     case mfp of
         NotFound -> do --either the file was downloaded too many times or it doesn't exist
             status status404

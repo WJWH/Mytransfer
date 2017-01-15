@@ -26,20 +26,20 @@ assertStartupEnvironment = do
     return True
     
 --starts the vacuum thread
-startVacuumThread :: IO ()
-startVacuumThread = void $ forkIO vacuumThread 
+startVacuumThread :: DBConnectionPool -> IO ()
+startVacuumThread pool = void $ forkIO (vacuumThread pool) 
 
 --this runs the vacuum function once per <vacuuminterval> microseconds
 --it runs the vacuum function in a separate thread so that if it crashes it does not take this thread with it
-vacuumThread :: IO ()
-vacuumThread = forever $ do
-    forkIO vacuum
+vacuumThread :: DBConnectionPool -> IO ()
+vacuumThread pool = forever $ do
+    forkIO $ vacuum pool
     threadDelay vacuumInterval
 
-vacuum :: IO ()
-vacuum = withConnection dbpath $ \conn -> do
-    fidsToDelete <- getFidsToDelete conn --select all the FIDs that should be deleted
+vacuum :: DBConnectionPool -> IO ()
+vacuum pool = do
+    fidsToDelete <- getFidsToDelete pool --select all the FIDs that should be deleted
     forM_ fidsToDelete $ \(Only fid) -> do
         succeeded <- deleteFile fid
-        when succeeded $ execute conn "UPDATE Files SET deletedYet = 1 WHERE id = ?" [fid]
+        when succeeded $ markFileAsDeleted pool fid
         print $ "Vacuumed file: " ++ (T.unpack fid) ++ ", succesfully removed: " ++ (show succeeded)

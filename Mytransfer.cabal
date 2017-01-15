@@ -38,6 +38,7 @@ library
                      , wai
                      , conduit
                      , conduit-combinators
+                     , resource-pool
   default-language:    Haskell2010
 
 executable Mytransfer
