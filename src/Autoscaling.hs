@@ -115,7 +115,6 @@ countingConduit ior = do
         Just bs' -> do
             --use modifyIORef' here instead of modifyIORef!!! space leak otherwise due to building up thunks
             liftIO $ modifyIORef' ior (+ (B.length bs'))
-            liftIO (readIORef ior >>= print)
             yield bs'
             countingConduit ior
         Nothing -> return ()
