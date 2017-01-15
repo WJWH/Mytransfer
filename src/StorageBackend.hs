@@ -19,10 +19,9 @@ import System.Random
 import DatabaseCalls
 import Types
 
---there are four main functions:
+--there are three main functions:
 --  add a file
 --  retrieve a file
---  check if a certain file exists
 --  delete a file (if it exists)
 --Of these, only the first two are accessible by the user, deleting happens automatically though a
 --the vacuum function in Utilities after <maxdownloads> downloads or after <maxage> seconds have
@@ -33,8 +32,9 @@ import Types
 --file/object in the bucket has a unique name (due to using UUIDs), there is no danger that servers will
 --accidentally overwrite each others files and they can all have the bucket mounted safely.
 
---we don't keep files forever, they can be downloaded a maximum of <maxdownloads> times
---currently a sqlite database is used for this, this can later be changed to an online database
+--we don't keep files forever, they can be downloaded a maximum of <maxdownloads> times, or after
+-- <maxage> time has passed.
+--originally a sqlite database was used for tracking this, this has since been changed to a postgres db
 
 
 --writes an uploaded file to the GCS bucket through the gcsfuse filesystem

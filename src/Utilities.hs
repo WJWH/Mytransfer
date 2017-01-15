@@ -16,8 +16,6 @@ import Types
 --examples: database must be present, directory to store uploaded files must be present, etc
 assertStartupEnvironment :: IO Bool
 assertStartupEnvironment = do
-    dbExists <- doesFileExist dbpath --dbpath is defined in Types
-    unless dbExists (error "Could not find filedb.sqlite, it must be present in the same directory as the Mytransfer executable.")
     uploadDirExists <- doesDirectoryExist (T.unpack uploadedFileDirectory)
     unless uploadDirExists (error "Could not find directory uploadedfiles, it must be present as a subdirectory to the directory containing the Mytransfer executable.")
     backgroundsDirExists <- doesDirectoryExist imageDirectory
