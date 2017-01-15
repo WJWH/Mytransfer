@@ -25,7 +25,7 @@ getFidsToDelete :: Pool Connection -> IO [Only FID]
 getFidsToDelete pool = withResource pool $ \conn -> do
     now <- getCurrentTime
     query conn
-        "SELECT id FROM Files WHERE (timesDownloaded >= ? OR timeOfUpload < ?) AND deletedYet = 0" 
+        "SELECT id FROM Files WHERE (timesDownloaded >= ? OR timeOfUpload < ?) AND NOT deletedYet" 
         (maxdownloads, addUTCTime (negate maxage) now) --select all the FIDs that should be deleted
 
 --Adds an uploaded file to the database so that its age and number of downloads can be tracked
@@ -46,9 +46,9 @@ increaseFileDownloads pool fid = withResource pool $ \conn -> void $ execute con
 
 --Marks the file as deleted in the database
 markFileAsDeleted :: DBConnectionPool -> FID -> IO ()
-markFileAsDeleted pool fid = withResource pool $ \conn -> void $ execute conn "UPDATE Files SET deletedYet = 1 WHERE id = ?" [fid]
+markFileAsDeleted pool fid = withResource pool $ \conn -> void $ execute conn "UPDATE Files SET deletedYet = TRUE WHERE id = ?" [fid]
 
 --create table statement to create the Files table in sqlite:
 --CREATE TABLE "Files" ("id" TEXT PRIMARY KEY  NOT NULL ,"timesDownloaded" INTEGER NOT NULL ,"timeOfUpload" DATETIME NOT NULL  DEFAULT (null) , "deletedYet" BOOL NOT NULL)
 --create table statement to create the Files table in postgres:
---CREATE TABLE Files ("id" TEXT PRIMARY KEY  NOT NULL ,"timesDownloaded" INTEGER NOT NULL ,"timeOfUpload" TIMESTAMPTZ NOT NULL, "deletedYet" BOOL NOT NULL)
+--CREATE TABLE Files (id TEXT PRIMARY KEY  NOT NULL ,timesDownloaded INTEGER NOT NULL ,timeOfUpload TIMESTAMPTZ NOT NULL, deletedYet BOOL NOT NULL)
