@@ -2,7 +2,7 @@
 module DatabaseCalls where
 
 --A module that separates out all the database calls to make changing databases (more) easy.
---This is useful because the early versions used SQLite while I eventually want to change to Postgres
+--This is useful because the early versions used SQLite while I eventually changed it to Postgres
 --to make autoscaling possible.
 
 import Control.Monad

@@ -10,7 +10,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time
 import Data.UUID
-import Database.SQLite.Simple
 import Network.Wai.Parse
 import System.Directory
 import System.Exit

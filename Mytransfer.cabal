@@ -27,7 +27,6 @@ library
                      , scotty
                      , wai-extra
                      , directory
-                     , sqlite-simple
                      , uuid
                      , random
                      , bytestring
