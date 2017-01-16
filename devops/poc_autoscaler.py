@@ -5,32 +5,41 @@
 from subprocess import check_output
 import requests
 
+serverCapacity = 62500000 # in bytes/sec, set to actual capacity when deciding on an instance type to use
+#current value is for f1-micro instances
+
 def listFileservers():
     r = check_output(["gcloud","compute","instance-groups","unmanaged", "list-instances", "mytransfer-fileservers"])
     fs = str(r,'utf-8')[:-1].split('\n')[1:] #convert to utf-8, drop final newline, split into lines and drop column names
     servers = dict([tuple(x.split()) for x in fs])
     return servers
 
-def deleteServer():
+def deleteServer(servername):
+    check_output(["gcloud", "compute", "instances", "delete", servername])
+    return
     
+def getLoad(servername):
+    r = requests.get('http://'+servername+'/load')
+    return int(r.text)
 
-print( listFileservers())
 
-'''
+drainingServers = {}
 while(True):
     fileservers = listFileservers() # returns a dict 
     #fileservers contains PROVISIONING, RUNNING and TERMINATED instances
     terminatedServers = [k for k, v in fileservers.items() if v == 'TERMINATED'] # only those which are TERMINATED
     for s in terminatedServers:
-        gcloud compute instances delete s
-    activeServers = (servers.filter(isRunning)) - drainingServers
+        deleteServer(s)
+    runningServers = {k for k, v in fileservers.items() if v == 'RUNNING'} # only those which are RUNNING
+    activeServers = runningServers - drainingServers
     load = 0
     capacity = 0
     for s in activeServers:
-        load += curl (s + "/load")
-        capacity += Constants.ServerCapacity //assuming all instances are equal size this is a constant
+        load += getLoad(s)
+        capacity += serverCapacity //assuming all instances are equal size this is a constant
     averageload = load/capacity
     if averageload > 0.8:
+        '''
         //this scales up one at a time, it is also possible to scale up multiple servers at a time if load is super high
         name = generateNewInstanceName
         gcloud compute instances create name
