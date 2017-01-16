@@ -1,0 +1,20 @@
+#!/bin/bash
+# sets up a load balanced instance group in an empty GCE project. Assumes that the gcloud tool has already been initialised and logged in.
+# update gcloud
+sudo gcloud components update
+# create health check with mostly all the defaults (every 5 s, two errors allowed, port 80)
+gcloud compute http-health-checks create mytransfer-healthcheck --request-path "/healthcheck"
+# create unmanaged instance group
+gcloud compute instance-groups unmanaged create mytransfer-fileservers
+# create backend service met health check
+gcloud compute backend-services create mytransfer-fileservers-bs --http-health-checks mytransfer-healthcheck
+# add backend met instance group
+gcloud compute backend-services add-backend mytransfer-fileservers-bs --instance-group=mytransfer-fileservers
+# create url map met backend service
+gcloud compute url-maps create mytransfer-urlmap --default-service mytransfer-fileservers-bs
+# create target proxy met url map
+gcloud compute target-http-proxies create mytransfer-proxy --url-map mytransfer-urlmap
+# create global forwarding rule met target proxy
+gcloud compute forwarding-rules create mytransfer-forwarding-rule --global --target-http-proxy mytransfer-proxy --ports 80
+# all done!
+echo "Don't forget to set the DNS records to the IP of the global forwarding rule"

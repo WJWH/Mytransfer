@@ -1,0 +1,14 @@
+#!/bin/bash
+# pretty fragile atm. Assumes you just cloned the repo from your home dir
+#create db/autoscale server from bare ubuntu image
+# install postgres
+sudo apt-get update
+sudo apt-get install postgres
+# create Files table in postgres
+sudo -u postgres psql -q -c "CREATE TABLE Files (id TEXT PRIMARY KEY  NOT NULL ,timesDownloaded INTEGER NOT NULL ,timeOfUpload TIMESTAMPTZ NOT NULL, deletedYet BOOL NOT NULL)"
+#download needed python library 
+sudo apt-get install python-pip
+sudo pip install requests
+# move autoscaling script to ~
+cd
+cp ~/Mytransfer/devops/poc_autoscaler.py .

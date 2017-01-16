@@ -1,0 +1,27 @@
+#!/bin/bash
+# create fileserver from bare ubuntu image
+# pretty fragile atm. Assumes you just cloned the repo from your home dir.
+# install gcsfuse
+export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
+echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | sudo tee /etc/apt/sources.list.d/gcsfuse.list
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+sudo apt-get update
+sudo apt-get install gcsfuse
+# install and configure authbind
+sudo apt-get install authbind
+sudo touch /etc/authbind/byport/80
+sudo chmod 777 /etc/authbind/byport/80
+# prepare the /uploadedfiles directory
+rm Mytransfer/uploadedfiles/.keep
+# make it so that the runMytransfer script starts running when the server starts up
+#write out current crontab
+cd
+cp ~/Mytransfer/devops/runMytransfer .
+crontab -l > mycron
+#echo new cron into cron file
+echo "@reboot runMytransfer" >> mycron
+#install new cron file
+crontab mycron
+rm mycron
+# obtain main executable
+echo "upload mytransfer executable now"
