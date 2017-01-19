@@ -17,6 +17,9 @@ import Types
 makeDBConnectionPool :: IO (Pool Connection)
 makeDBConnectionPool = createPool (connect postgresConnectionParameters) (close) 1 10 10
 
+--closes all the db connections
+closeConnections :: Pool Connection -> IO ()
+closeConnections = destroyAllResources
 
 --used by the vacuum function in the Utilities module, will select all FIDs in the Files table that
 --should be deleted, either because they have been downloaded or because they have been uploaded
