@@ -4,7 +4,6 @@ module Main where
 import Control.Monad
 import Data.IORef
 import Network
-import Network.Wai.Handler.Warp (defaultSettings)
 import Web.Scotty
 
 import ImageProvider
@@ -15,8 +14,6 @@ import Utilities
 import Autoscaling
 import DatabaseCalls
 import MainApp
-
-scottyopts = Options 0 defaultSettings
 
 main :: IO ()
 main = do

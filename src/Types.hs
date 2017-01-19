@@ -9,6 +9,8 @@ import qualified Data.Text as T
 import Data.Time
 --import Database.SQLite.Simple
 import Database.PostgreSQL.Simple
+import Network.Wai.Handler.Warp (defaultSettings)
+import Web.Scotty
 
 import Secrets
 
@@ -69,3 +71,6 @@ type DBConnectionPool = Pool Connection
 postgresConnectionParameters :: ConnectInfo
 postgresConnectionParameters = defaultConnectInfo { connectPassword = postgresPassword --from Secrets module 
                                                   }
+
+--options for Scotty, zero means non-verbose and the defaultSettings refers to the settings for the warp server
+scottyopts = Options 0 defaultSettings
